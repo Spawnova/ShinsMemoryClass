@@ -22,15 +22,15 @@ ReadFloat(address,offsets*)  .............................  #Reads a float value
 WriteFloat(address,value,offsets*)  ......................  #Writes a float value at a specified address
 ReadDouble(address,offsets*)  ............................  #Reads a double value at a specified address
 WriteDouble(address,value,offsets*)  .....................  #Writes a double value at a specified address
-ReadUInt(address,offsets*)  ..............................  #Reads a 32 bit value at a specified address
+ReadUInt(address,offsets*)  ..............................  #Reads an unsigned 32 bit value at a specified address
 ReadInt(address,offsets*)  ...............................  #Reads a 32 bit value at a specified address
 WriteUInt(address,value,offsets*)  .......................  #Writes a 32 bit value at a specified address
 WriteInt(address,value,offsets*)  ........................  #Writes a 32 bit value at a specified address
-ReadUShort(address,offsets*)  ............................  #Reads a 16 bit value at a specified address
+ReadUShort(address,offsets*)  ............................  #Reads an unsigned 16 bit value at a specified address
 ReadShort(address,offsets*)  .............................  #Reads a 16 bit value at a specified address
 WriteUShort(address,value,offsets*)  .....................  #Writes a 16 bit value at a specified address
 WriteShort(address,value,offsets*)  ......................  #Writes a 16 bit value at a specified address
-ReadUChar(address,offsets*)  .............................  #Reads an 8 bit value at a specified address
+ReadUChar(address,offsets*)  .............................  #Reads an unsigned 8 bit value at a specified address
 ReadChar(address,offsets*)  ..............................  #Reads an 8 bit value at a specified address
 WriteUChar(address,value,offsets*)  ......................  #Writes an 8 bit value at a specified address
 WriteChar(address,value,offsets*)  .......................  #Writes an 8 bit value at a specified address

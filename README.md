@@ -1,6 +1,6 @@
 # ShinsMemoryClass
 An Autohotkey class for reading, writing and interacting with memory
-Featuring custom build DLL specifically to integrate with AutoHotkey for maximum speed (or atleast as fast as I was able to code them lol)
+Featuring custom built DLLs specifically to integrate with AutoHotkey for maximum speed (or atleast as fast as I was able to code them lol)
 
 
 

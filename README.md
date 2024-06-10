@@ -4,7 +4,7 @@ Featuring custom build DLL specifically to integrate with AutoHotkey for maximum
 
 
 
-# YouTube verview and examples
+# YouTube overview and examples
 [![Video](https://img.youtube.com/vi/7OUDVem7AcA/default.jpg)](https://www.youtube.com/watch?v=7OUDVem7AcA)
 
 ## Functions

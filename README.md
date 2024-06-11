@@ -34,6 +34,7 @@ ReadUChar(address,offsets*)  .............................  #Reads an unsigned 8
 ReadChar(address,offsets*)  ..............................  #Reads an 8 bit value at a specified address
 WriteUChar(address,value,offsets*)  ......................  #Writes an 8 bit value at a specified address
 WriteChar(address,value,offsets*)  .......................  #Writes an 8 bit value at a specified address
+
 ReadRaw(address,byref buffer, bytes, offsets*)  ..........  #Reads X amount of bytes into a buffer
 WriteRaw(address, byref buffer, bytes, offsets*)  ........  #Writes X amount of bytes at an address
 

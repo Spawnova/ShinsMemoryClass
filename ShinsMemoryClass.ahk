@@ -58,7 +58,7 @@ class ShinsMemoryClass {
 		this.bPtr := this.SetVarCapacity("_buff",0x1000)
 		this.uniStr := (A_IsUnicode = 1 ? 1 : 0)
 
-		this.LoadLib(dllFolder "\ShinsMemoryClass" this.bitStr ".dll")
+		this.LoadLib((dllFolder = "" ? "" : RegExMatch(dllFolder,"\\$|\/$") ? dllFolder : dllFolder "\") "ShinsMemoryClass" this.bitStr ".dll")
 		;this.LoadLib("C:\Users\Shin\source\repos\ShinsMemoryClass\x64\Release\ShinsMemoryClass" this.bitStr ".dll")
 		this.InitFuncs()
 		this.baseAddress := this.ba := this.GetBaseAddress()

@@ -5,7 +5,7 @@ Featuring custom built DLLs specifically to integrate with AutoHotkey for maximu
 
 
 # YouTube overview and examples
-[![Video](https://img.youtube.com/vi/7OUDVem7AcA/default.jpg)](https://www.youtube.com/watch?v=7OUDVem7AcA)
+[![Video](https://img.youtube.com/vi/7OUDVem7AcA/default.jpg)](https://www.youtube.com/watch?v=7OUDVem7AcA) [![Video](https://img.youtube.com/vi/K-jf7BtKmlI/default.jpg)](https://www.youtube.com/watch?v=K-jf7BtKmlI)
 
 ## Functions
 ```ruby

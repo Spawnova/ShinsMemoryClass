@@ -53,6 +53,14 @@ GetModuleBaseAddress(moduleStr)  .........................  #Get the base addres
 
 Nop(address,bytes)  ......................................  #Nop x amount of bytes at a specified address
 
+OpenProcess(pid,access)  .................................  #Open a handle to a process   
+
+Execute(address)  ........................................  #Create a remote thread and execute it
+CreateThread(address,suspended:=0)  ......................  #Create a Remote thread
+CloseThread(hThread)  ....................................  #Close a thread
+WaitThread(hThread,timeout:=0xFFFFFFFF)  .................  #Wait for a thread to finish
+ResumeThread(hThread)  ...................................  #Resume a thread
+
 FindFreeMemory(bytes:=0x1000)  .........................................  #Find a free memory region, anywhere in the process
 FindFreeMemoryClosest(address,bytes:=0x1000,maxDist:=0x7FFFFFF0)  ......  #Find a free memory region closest to a specified address, within x dist
 FindFreeMemoryNearby(address,bytes:=0x1000,maxDist:=0x7FFFFFF0)  .......  #Find a memory region nearby a specified address, within X dist

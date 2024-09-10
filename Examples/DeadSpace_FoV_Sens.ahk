@@ -60,7 +60,7 @@ SensHook.hook(_m.BaseAddress + 0x25EAB54,SensFunction)
 
 
 loop {
-	if (rbd) {
+	if (rightButtonDown) {
 		if (fov > minFov) {
 			fov -= 1
 			if (fov < minFov)
@@ -86,11 +86,11 @@ xbutton1::c
 xbutton2::f
 
 ~rbutton::
-rbd := 1
+rightButtonDown := 1
 _m.writefloat(sensAddress,sensAiming)
 return
 
 ~rbutton up::
-rbd := 0
+rightButtonDown := 0
 _m.writefloat(sensAddress,sensNormal)
 return

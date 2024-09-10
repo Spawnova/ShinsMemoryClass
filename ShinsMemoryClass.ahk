@@ -10,7 +10,7 @@
 ;
 ; For an overview and basic usage see -> www.youtube.com/watch?v=7OUDVem7AcA
 ;
-; Version 1.1.2 - 6/13/2024
+; Version 1.1.3 - 9/10/2024
 ;
 
 class ShinsMemoryClass {
@@ -19,10 +19,10 @@ class ShinsMemoryClass {
 		;a=all, r=read, w=write, o=operation, s=suspend/resume, t=thread, q=query, l=limited query
 		static _access := {all:0x1F0FFF,a:0x1F0FFF,r:0x10,w:0x20,o:0x8,s:0x800,t:0x2,q:0x400,l:0x1000} ;combine for access enums:   "rwq" = Read+write+Query,   "tsl" = thread+suspend/resume+limited query  etc
 		
-		this.version := "1.1.2"
+		this.version := "1.1.3"
 	
 		if (!hwnd := WinExist(programIdentifier)) {
-			msgbox % "Could not find a window the the identifer: " programIdentifier
+			msgbox % "Could not find a window with the identifer: " programIdentifier
 			return
 		}
 		WinGet, pid, pid, % programIdent
@@ -33,7 +33,7 @@ class ShinsMemoryClass {
 		this.pid := pid
 
 		
-		if (access = "all") {
+		if (access = "all" or access = 0) {
 			this.access := _access.all
 		} else {
 			this.access := 0
@@ -58,8 +58,11 @@ class ShinsMemoryClass {
 		this.bPtr := this.SetVarCapacity("_buff",0x1000)
 		this.uniStr := (A_IsUnicode = 1 ? 1 : 0)
 
-		this.LoadLib((dllFolder = "" ? "" : RegExMatch(dllFolder,"\\$|\/$") ? dllFolder : dllFolder "\") "ShinsMemoryClass" this.bitStr ".dll")
-		;this.LoadLib("C:\Users\Shin\source\repos\ShinsMemoryClass\x64\Release\ShinsMemoryClass" this.bitStr ".dll")
+		ifexist, C:\Users\Shin\source\repos\ShinsMemoryClass\x64\Release
+			this.LoadLib("C:\Users\Shin\source\repos\ShinsMemoryClass\x64\Release\ShinsMemoryClass" this.bitStr ".dll")
+		else
+			this.LoadLib((dllFolder = "" ? "" : RegExMatch(dllFolder,"\\$|\/$") ? dllFolder : dllFolder "\") "ShinsMemoryClass" this.bitStr ".dll")
+
 		this.InitFuncs()
 		this.baseAddress := this.ba := this.GetBaseAddress()
 	}
@@ -152,7 +155,7 @@ class ShinsMemoryClass {
 
 
 	ReadRaw(address,byref buffer, bytes, offsets*) {
-		varsetcapacity(buffer,bytes)
+		varsetcapacity(buffer,bytes,0)
 		return DllCall(this._ReadRaw, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Ptr", &buffer, "Int", bytes, "Int")
 	}
 	WriteRaw(address, byref buffer, bytes, offsets*) {
@@ -200,6 +203,7 @@ class ShinsMemoryClass {
 	}
 
 	ReadString(address,len:=0,unicode:=0, offsets*) {
+		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
 		if (len <= 0)
 			len := this.StrLen(address,unicode)
 		if (len <= 0)
@@ -208,14 +212,13 @@ class ShinsMemoryClass {
 			len*=2, enc := "utf-16"
 		else
 			enc := "utf-8"
-		
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
 		VarSetCapacity(buffer,len)
 		if (DllCall(this._ReadRaw, "Ptr", this.hProcess, "Ptr", address, "Ptr", &buffer, "UInt", len, "Int")) {
 			return StrGet(&buffer,len,enc)
 		}
 		return ""
 	}
+	
 	WriteString(address,str,unicode:=0, offsets*) {
 		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
 		return DllCall(this._WriteString, "Ptr", this.hProcess, "Ptr", address, "Ptr", &str, "Int", 0, "Int", unicode, "int", this.uniStr, "Int")
@@ -262,6 +265,24 @@ class ShinsMemoryClass {
 		return DllCall((multiThread ? this._AobScanMT : this._AoBScan), "Ptr", this.hProcess, "Ptr", &bytes, "Ptr", &mask, "UInt", s.count(), "Ptr")
 	}
 
+	AoBAll(byteStr, byref ptrs) {
+		varsetcapacity(ptrs,4096,0)
+		bStr := this.FormatAoBBytes(byteStr)
+		s := strsplit(bStr," ")
+		varsetcapacity(bytes,s.count())
+		varsetcapacity(mask,s.count())
+		for k,v in s {
+			if (RegExMatch(v,"[a-fA-F0-9]{2}",mm)) {
+				val := "0x" mm
+				numput(val,bytes,a_index-1,"uchar")
+				numput(0,mask,a_index-1,"uchar")
+			} else {
+				numput(1,mask,a_index-1,"uchar")
+			}
+		}
+		return DllCall(this._AoBall, "Ptr", this.hProcess, "Ptr", &bytes, "Ptr", &mask, "UInt", s.count(), "Ptr", &ptrs, "Ptr")
+	}
+
 	;returns an address where there is uncommited memory with a specified byte size
 	FindFreeMemory(bytes:=0x1000) {
 		return DllCall(this._FindFreeMemory, "Ptr", this.hProcess, "UInt", bytes, "Ptr")
@@ -282,7 +303,7 @@ class ShinsMemoryClass {
 	;if address is 0, it will find the first available region
 	;access: r=read, w=write, e=execute    (mix and match, default 0x40 execute-read-write)
 	;combine with FindClosestFreeMemory() to alloc near specific addresses
-	;returns the base address of allocation if successfull, 0 otherwise
+	;returns the base address of allocation if successfull, < 0 otherwise
 	Alloc(bytes:=0x1000, address:=0, access:="rwe", topDown:=0) {
 		return DllCall(this._AllocMemory, "Ptr", this.hProcess, "Ptr", address, "UInt", bytes, "AStr", access, "UInt", topDown, "Ptr")
 	}
@@ -473,6 +494,7 @@ class ShinsMemoryClass {
 		this._RelBytes64 := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "RelOffset64", "Ptr")
 		this._ToHex := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "ToHex", "Ptr")
 		this._ToHex64 := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "ToHex64", "Ptr")
+		this._aoball := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "AoBScanAll", "Ptr")
 	}
 	ToHex(val,prefix:=1,bits:=0) {
 		if (bits) {
@@ -534,7 +556,7 @@ class ShinsMemoryClass {
 class HookHelper {
 	__New(mem, storeAddress, size:=0x1000, start:=0, init:=0xCCCCCCCC, maxDist:=0x7FFFFFF0) {
 		this.bits := mem.bits
-		this.size := size
+		this.size := Max(Ceil(size/0x1000),1) * 0x1000
 		this.mem := mem
 		this.address := 0
 		this.pcache := 0
@@ -557,16 +579,17 @@ class HookHelper {
 			if (start <= 0) {
 				pmem := this.mem.Alloc(size)
 			} else {
+				
 				start := this.mem.FindFreeMemoryNearby(start,size,maxDist)
-				if (start = 0) {
+				if (start = -1) {
 					msgbox % "RegionPtr Error:`nFailed to find free memory close to " this.mem.ToHex(start,1,this.mem.processBits)
 					return 0
 				}
 				pmem := this.mem.Alloc(size,start)
 			}
 			
-			if (pmem = 0) {
-				msgbox % "RegionPtr Error:`nFailed to alloc - " dllcall("Kernel32.dll\GetLastError")
+			if (pmem < 0) {
+				msgbox % "RegionPtr Error:`nFailed to alloc - " dllcall("Kernel32.dll\GetLastError") " (" this.mem.ToHex(DllCall("ntdll.dll\RtlGetLastNtStatus"),1) ")"
 				return 0
 			}
 
@@ -617,6 +640,9 @@ class HookHelper {
 			} else if (v = "JUMP") {
 				out .= this.RelSwapStr(this.current+4,args[i])
 				this.current+=4,i++
+			} else if (RegExMatch(v,"REL_([^_]+)_([^_]+)_(\d)",mm)) {
+				out .= (mm3 ? this.RelSwapStr64(this.current+8,mm2) : this.RelSwapStr(this.current+4,mm2))
+				this.current+=(mm3?8:4),i += mm1
 			} else {
 				this.current++
 				out .= v
@@ -656,7 +682,7 @@ class HookHelper {
 		if (!force and this.mem.readushort(fromAddress) = 0x25FF) {
 			return
 		}
-		asm := "FF 25 00 00 00 00 " this.mem.ExplodeHex(toAddress,1)
+		asm := "FF 25 00 00 00 00 " this.mem.ExplodeHex(toAddress,1,1)
 		loop % nops
 			asm .= " 90"
 		;this.Pause()
@@ -680,6 +706,26 @@ class HookHelper {
 		this.currentCache += mod(this.currentCache,4) ;always be 4 byte aligned
 		this.temp := this.currentCache
 		return s
+	}
+
+
+	;to be used in the asm string, more will be added later
+	;example
+	;str := "8B 87 A8 00 00 00"  ;mov eax,[rdi+000000A8]
+	;str .= " 3B 05 " FovHook.REL(minFovAddress,2)  ;cmp eax,[minFov]
+	;str .= " 0F 8C 12 00 00 00"  ;jl 13FFF0024
+	;str .= " 3B 05 " FovHook.REL(maxFovAddress,2)  ;cmp eax,[maxFov]
+	;str .= " 0F 8F 06 00 00 00"  ;jg 13FFF0024
+	;str .= " 8B 05 " FovHook.REL(fovAddress,2) ;mov eax,[fov]
+	;str .= " E9 " FovHook.JUMP(_m.BaseAddress + 0x1012AC5)  ;jmp "Dead Space.exe"+1012AC5
+	REL(address,ops:=1,bits:=0) {
+		return "REL_" ops "_" this.mem.tohex(address,1,bits) "_" bits
+	}
+	REPLE(var,bits:=0) {
+		return this.mem.explodehex(var,bits,1)
+	}
+	JUMP(address,bits:=0) {
+		return "REL_1_" this.mem.tohex(address,1,bits) "_" bits
 	}
 }
 

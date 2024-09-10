@@ -14,8 +14,8 @@ if (!WinExist("ahk_exe Dead Space.exe")) {
 
 rightButtonDown := 0
 
-sensAiming := 4.5
-sensNormal := 6.5
+sensAiming := 0.5
+sensNormal := 0.8
 
 minFov := 45
 maxFov := 70
@@ -45,16 +45,17 @@ fovFunction := FovHook.WriteASM(str)
 FovHook.hook(_m.BaseAddress + 0x1003B64,fovFunction)
 
 
-
-SensHook := new HookHelper(_m,_m.BaseAddress+0x25EAB94,0x1000,_m.BaseAddress+0x25EAB54) ;main hook
+;updated address, old one was invalid
+SensHook := new HookHelper(_m,_m.BaseAddress+0x1A711F4,0x1000,_m.BaseAddress+0x1A727F0) ;main hook
 
 SensAddress := SensHook.reserveCache(4),	_m.writeFloat(SensAddress,sensNormal)
-		
+
 str := "F3 0F 10 05 " SensHook.REL(sensAddress,4)  ;movss xmm0,[sens]
-str .= " E9 " SensHook.JUMP(_m.BaseAddress+0x25EAB59)  ;jmp "Dead Space.exe"+25EAB59
+str .= " F3 41 0F 5E C0"  ;divss xmm0,xmm8
+str .= " E9 " SensHook.JUMP(_m.BaseAddress+0x1A727F5)  ;jmp "Dead Space.exe"+1A727F5
 
 SensFunction := SensHook.WriteASM(str)
-SensHook.hook(_m.BaseAddress + 0x25EAB54,SensFunction)
+SensHook.hook(_m.BaseAddress + 0x1A727F0,SensFunction)
 
 
 

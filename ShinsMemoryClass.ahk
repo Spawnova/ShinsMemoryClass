@@ -10,7 +10,7 @@
 ;
 ; For an overview and basic usage see -> www.youtube.com/watch?v=7OUDVem7AcA
 ;
-; Version 1.1.3 - 9/10/2024
+; Version 1.1.4 - 12/18/2024
 ;
 
 class ShinsMemoryClass {
@@ -19,13 +19,13 @@ class ShinsMemoryClass {
 		;a=all, r=read, w=write, o=operation, s=suspend/resume, t=thread, q=query, l=limited query
 		static _access := {all:0x1F0FFF,a:0x1F0FFF,r:0x10,w:0x20,o:0x8,s:0x800,t:0x2,q:0x400,l:0x1000} ;combine for access enums:   "rwq" = Read+write+Query,   "tsl" = thread+suspend/resume+limited query  etc
 		
-		this.version := "1.1.3"
+		this.version := "1.1.4"
 	
 		if (!hwnd := WinExist(programIdentifier)) {
 			msgbox % "Could not find a window with the identifer: " programIdentifier
 			return
 		}
-		WinGet, pid, pid, % programIdent
+		WinGet, pid, pid, % programIdentifier
 		if (pid = 0) {
 			msgbox % "Could not find pid for the identifier: " programIdentifer
 			return
@@ -69,13 +69,15 @@ class ShinsMemoryClass {
 	
 	;basically just reads the ptr type of the process, so 64bit would be int64, 32bit is uint, not an ahk pointer, 64 bit ahk reading a 32 bit pointer would return 32 bit
 	ReadPtr(address,offsets*) {
-		address:=(offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address:=(c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		if (!this.processBits)
 			return this.ReadUint_no(address)
 		return this.ReadInt64_no(address)
 	}
 	WritePtr(address,value,offsets*) {
-		address:=(offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address:=(c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		if (!this.processBits)
 			return this.Writeint_no(address,value)
 		return this.WriteInt64_no(address,value)
@@ -85,87 +87,110 @@ class ShinsMemoryClass {
 
 	;ahk doesn't support unsigned int64 according to docs, function here just for consistency
 	ReadUInt64(address,offsets*) {
-		return DllCall(this._ReadInt64, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int64")
+		c := offsets.count()
+		return DllCall(this._ReadInt64, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int64")
 	}
 	ReadInt64(address,offsets*) {
-		return DllCall(this._ReadInt64, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int64")
+		c := offsets.count()
+		return DllCall(this._ReadInt64, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int64")
 	}
 	WriteInt64(address,value,offsets*) {
-		return DllCall(this._WriteInt64, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int64",value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt64, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int64",value, "Int")
 	}
 	WriteUInt64(address,value,offsets*) {
-		return DllCall(this._WriteInt64, "Ptr", this.hProcess , "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int64",value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt64, "Ptr", this.hProcess , "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int64",value, "Int")
 	}
 
 
 	ReadFloat(address,offsets*) {
-		return DllCall(this._ReadFloat, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Float")
+		c := offsets.count()
+		return DllCall(this._ReadFloat, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Float")
 	}
 	WriteFloat(address,value,offsets*) {
-		return DllCall(this._WriteFloat, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Float", value , "Int")
+		c := offsets.count()
+		return DllCall(this._WriteFloat, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Float", value , "Int")
 	}
 
 	ReadDouble(address,offsets*) {
-		return DllCall(this._ReadDouble, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Double")
+		c := offsets.count()
+		return DllCall(this._ReadDouble, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Double")
 	}
 	WriteDouble(address,value,offsets*) {
-		return DllCall(this._WriteDouble, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Double", value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteDouble, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Double", value, "Int")
 	}
 
 	ReadUInt(address,offsets*) {
-		return DllCall(this._ReadInt32, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UInt")
+		c := offsets.count()
+		return DllCall(this._ReadInt32, "Ptr", this.hProcess, "Ptr", (c==0?address:c==1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UInt")
 	}
 	ReadInt(address,offsets*) {
-		return DllCall(this._ReadInt32, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int")
+		c := offsets.count()
+		return DllCall(this._ReadInt32, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int")
 	}
 	WriteUInt(address,value,offsets*) {
-		return DllCall(this._WriteInt32, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UInt",value , "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt32, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UInt",value , "Int")
 	}
 	WriteInt(address,value,offsets*) {
-		return DllCall(this._WriteInt32, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Int", value,  "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt32, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Int", value,  "Int")
 	}
 
 
 	ReadUShort(address,offsets*) {
-		return DllCall(this._ReadInt16, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UShort")
+		c := offsets.count()
+		return DllCall(this._ReadInt16, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UShort")
 	}
 	ReadShort(address,offsets*) {
-		return DllCall(this._ReadInt16, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Short")
+		c := offsets.count()
+		return DllCall(this._ReadInt16, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Short")
 	}
 	WriteUShort(address,value,offsets*) {
-		return DllCall(this._WriteInt16, "Ptr", this.hProcess , "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UShort",value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt16, "Ptr", this.hProcess , "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UShort",value, "Int")
 	}
 	WriteShort(address,value,offsets*) {
-		return DllCall(this._WriteInt16, "Ptr", this.hProcess , "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Short",value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt16, "Ptr", this.hProcess , "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Short",value, "Int")
 	}
 
 
 	ReadUChar(address,offsets*) {
-		return DllCall(this._ReadInt8, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UChar")
+		c := offsets.count()
+		return DllCall(this._ReadInt8, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UChar")
 	}
 	ReadChar(address,offsets*) {
-		return DllCall(this._ReadInt8, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Char")
+		c := offsets.count()
+		return DllCall(this._ReadInt8, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Char")
 	}
 	WriteUChar(address,value,offsets*) {
-		return DllCall(this._WriteInt8, "Ptr", this.hProcess , "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "UChar", value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt8, "Ptr", this.hProcess , "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "UChar", value, "Int")
 	}
 	WriteChar(address,value,offsets*) {
-		return DllCall(this._WriteInt8, "Ptr", this.hProcess , "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Char", value, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteInt8, "Ptr", this.hProcess , "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Char", value, "Int")
 	}
 
 
 	ReadRaw(address,byref buffer, bytes, offsets*) {
-		varsetcapacity(buffer,bytes,0)
-		return DllCall(this._ReadRaw, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Ptr", &buffer, "Int", bytes, "Int")
+		c := offsets.count()
+		varsetcapacity(buffer,bytes)
+		return DllCall(this._ReadRaw, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Ptr", &buffer, "Int", bytes, "Int")
 	}
 	WriteRaw(address, byref buffer, bytes, offsets*) {
-		return DllCall(this._WriteRaw, "Ptr", this.hProcess, "Ptr", (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets)), "Ptr", &buffer, "Int", bytes, "Int")
+		c := offsets.count()
+		return DllCall(this._WriteRaw, "Ptr", this.hProcess, "Ptr", (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets)), "Ptr", &buffer, "Int", bytes, "Int")
 	}
 
 	;write a string of hex bytes
 	;WriteByteString(address,"50 51 E9 FF023194 C3")
 	WriteByteString(address, bytes) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		bytes := this.FormatAoBBytes(bytes)
 		s := strsplit(bytes," ")
 		varsetcapacity(buf,s.count())
@@ -180,53 +205,67 @@ class ShinsMemoryClass {
 
 	;general purpose function for reading, these are slower than calling dedicated reads, but only by a tiny fraction
 	Read(address, type := "UInt", offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		DllCall(this._read, "Ptr",  this.hProcess, "Ptr", address , "Ptr", this.bPtr, "UInt", this.lens[type])
 		return numget(this.bPtr,0,type)
 	}
 
 	;general purpose function for writing, these are slower than calling dedicated writes, but only by a tiny fraction
 	Write(address, value, type:="UInt", offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		numput(value,this.bPtr,0,type)
 		return DllCall(this._WriteRaw, "Ptr", this.hProcess, "Ptr", address, "Ptr", this.bPtr, "UInt", this.lens[type], "Int")
 	}
 
 	;get pointer based on address + offsets[]
 	GetPointer(address,offsets*) {
+		varsetcapacity(bptr,1024,0)
 		i := 0
-		for k,v in offsets {
-			numput(v,this.bPtr,i,"Ptr")
-			i += a_ptrsize
+		if (this.processBits) {
+			for k,v in offsets {
+				numput(v,bPtr,i,"int64"), i += 8
+			}
+			return DllCall(this._GetPtr64, "Ptr", this.hProcess, "int64", address, "Ptr",&bPtr, "UInt", offsets.count(), "int64")
+		} else {
+			for k,v in offsets {
+				numput(v,bPtr,i,"uint"), i += 4
+			}
+			return DllCall(this._GetPtr32, "Ptr", this.hProcess, "uint", address, "Ptr",&bPtr, "UInt", offsets.count(), "uint")
 		}
-		return DllCall(this._GetPtr, "Ptr", this.hProcess, "Ptr", address, "Ptr", this.bPtr, "UInt", offsets.count(), "UInt", this.ppSize, this.ppType)
 	}
 
 	ReadString(address,len:=0,unicode:=0, offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c == 0 ? address : c == 1 ? this.ReadPtr(address+offsets[1]) : this.GetPtr2(address,offsets))
 		if (len <= 0)
 			len := this.StrLen(address,unicode)
-		if (len <= 0)
+		if (len <= 0) {
 			return ""
-		if (unicode)
-			len*=2, enc := "utf-16"
-		else
+		}
+		if (unicode) {
+			len*=2
+			enc := "utf-16"
+		} else {
 			enc := "utf-8"
+		}
 		VarSetCapacity(buffer,len)
 		if (DllCall(this._ReadRaw, "Ptr", this.hProcess, "Ptr", address, "Ptr", &buffer, "UInt", len, "Int")) {
 			return StrGet(&buffer,len,enc)
 		}
 		return ""
 	}
-	
 	WriteString(address,str,unicode:=0, offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		return DllCall(this._WriteString, "Ptr", this.hProcess, "Ptr", address, "Ptr", &str, "Int", 0, "Int", unicode, "int", this.uniStr, "Int")
 	}
 
 	;null terminate
 	WriteStringNT(address,str,unicode:=0, offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		return DllCall(this._WriteString, "Ptr", this.hProcess, "Ptr", address, "Ptr", &str, "Int", 1, "Int", unicode, "int", this.uniStr, "Int")
 	}
 	
@@ -263,6 +302,23 @@ class ShinsMemoryClass {
 			}
 		}
 		return DllCall((multiThread ? this._AobScanMT : this._AoBScan), "Ptr", this.hProcess, "Ptr", &bytes, "Ptr", &mask, "UInt", s.count(), "Ptr")
+	}
+
+	AoBModule(module,byteStr) {
+		bStr := this.FormatAoBBytes(byteStr)
+		s := strsplit(bStr," ")
+		varsetcapacity(bytes,s.count())
+		varsetcapacity(mask,s.count())
+		for k,v in s {
+			if (RegExMatch(v,"[a-fA-F0-9]{2}",mm)) {
+				val := "0x" mm
+				numput(val,bytes,a_index-1,"uchar")
+				numput(0,mask,a_index-1,"uchar")
+			} else {
+				numput(1,mask,a_index-1,"uchar")
+			}
+		}
+		return DllCall(this._AoB_Module, "Ptr", this.hProcess, "Ptr", module, "Ptr", &bytes, "Ptr", &mask, "UInt", s.count(), "Ptr")
 	}
 
 	AoBAll(byteStr, byref ptrs) {
@@ -315,7 +371,8 @@ class ShinsMemoryClass {
 
 	;simple wrapper function for making a single protected call
 	writeProt(address, value, type := "Uint", offsets*) {
-		address := (offsets.count()=0?address:offsets.count()=1?this.ReadPtr(address+offsets[1]):this.GetPtr(address,offsets))
+		c := offsets.count()
+		address := (c=0?address:c=1?this.ReadPtr(address+offsets[1]):this.GetPtr2(address,offsets))
 		if (!old := this.Unprotect(address))
 			return 0
 		v := this.Write(address,value,type)
@@ -448,13 +505,20 @@ class ShinsMemoryClass {
 		}
 		return 1
 	}
-	GetPtr(address,offsets) {
+	GetPtr2(address,offsets) {
+		varsetcapacity(bptr,1024)
 		i := 0
-		for k,v in offsets {
-			numput(v,this.bPtr,i,"Ptr")
-			i += a_ptrsize
+		if (this.processBits) {
+			for k,v in offsets {
+				numput(v,bPtr,i,"int64"), i += 8
+			}
+			return DllCall(this._GetPtr64, "Ptr", this.hProcess, "int64", address, "Ptr",&bPtr, "UInt", offsets.count(), "int64")
+		} else {
+			for k,v in offsets {
+				numput(v,bPtr,i,"uint"), i += 4
+			}
+			return DllCall(this._GetPtr32, "Ptr", this.hProcess, "uint", address, "Ptr",&bPtr, "UInt", offsets.count(), "uint")
 		}
-		return DllCall(this._GetPtr, "Ptr", this.hProcess, "Ptr", address, "Ptr", this.bPtr, "UInt", offsets.count(), "UInt", this.ppSize, this.ppType)
 	}
 	InitFuncs() {
 		if (!mdl := DllCall("Kernel32.dll\GetModuleHandle", "str", "ShinsMemoryClass" this.bitStr, "Ptr")) {
@@ -463,6 +527,8 @@ class ShinsMemoryClass {
 		}
 		this._GetBaseAddress := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "GetBaseAddress", "Ptr")
 		this._GetPtr := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "GetPointer", "Ptr")
+		this._GetPtr32 := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "GetPtr32", "Ptr")
+		this._GetPtr64 := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "GetPtr64", "Ptr")
 		this._ReadDouble := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "ReadDouble", "Ptr")
 		this._ReadFloat := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "ReadFloat", "Ptr")
 		this._ReadInt32 := DllCall("Kernel32.dll\GetProcAddress", "Ptr", mdl, "AStr", "ReadInt32", "Ptr")
@@ -640,6 +706,30 @@ class HookHelper {
 			} else if (v = "JUMP") {
 				out .= this.RelSwapStr(this.current+4,args[i])
 				this.current+=4,i++
+			} else if (v = "JUMP2") {
+				diff := args[i]-this.current
+				if (abs(diff) > 127) {
+					out .= "E9 " this.RelSwapStr(this.current+5,args[i])
+					this.current+=5,i++
+				} else {
+					if (diff > 0)
+						out .= "EB " tohex(diff-1)
+					else
+						out .= "EB " tohex(255+(diff-1))
+					this.current+=2,i++
+				}
+			} else if (v = "JNE") {
+				diff := args[i]-this.current
+				if (abs(diff) > 127) {
+					out .= "0F 85 " this.RelSwapStr(this.current+6,args[i])
+					this.current+=6,i++
+				} else {
+					if (diff > 0)
+						out .= "75 " tohex(diff-1)
+					else
+						out .= "75 " tohex(255+(diff-1))
+					this.current+=2,i++
+				}
 			} else if (RegExMatch(v,"REL_([^_]+)_([^_]+)_(\d)",mm)) {
 				out .= (mm3 ? this.RelSwapStr64(this.current+8,mm2) : this.RelSwapStr(this.current+4,mm2))
 				this.current+=(mm3?8:4),i += mm1
@@ -659,7 +749,23 @@ class HookHelper {
 		this.mem.WriteByteString(start,out)
 		return start
 	}
-	
+	ToAsmCall(start,func,hex:=1,bigE:=0) {
+		if (func > start) {
+			diff := func - start - 1
+			return (bigE ? diff : this.ToLittleEndian(diff,hex))
+		} else {
+			diff := 0xFFFFFFFF - (start-func)
+			return (bigE ? diff : this.ToLittleEndian(diff,hex))
+		}
+	}
+	ToLittleEndian(n,hex:=1) {
+		a := (n&0xFF000000) >> 24
+		b := (n&0xFF0000) >> 16
+		c := (n&0xFF00) >> 8
+		d := (n&0xFF)
+		v := (d<<24)+(c<<16)+(b<<8)+a
+		return (hex ? this.mem.ExplodeHex(v,0,1) : v)
+   }
 	;hook with a 32 bit relative jump
 	Hook(fromAddress,toAddress,force:=0,nops:=0) {
 		if (!force and this.mem.readuchar(fromAddress) = 0xE9) {
@@ -670,11 +776,9 @@ class HookHelper {
 		loop % nops
 			asm .= " 90"
 
-		;this.Pause()
 		prot := this.mem.unprotect(fromAddress)
 		this.mem.WriteByteString(fromAddress,asm)
 		this.mem.protect(fromAddress,prot)
-		;this.Resume()
 	}
 
 	;hook with a 64 bit absolute jump
@@ -708,16 +812,6 @@ class HookHelper {
 		return s
 	}
 
-
-	;to be used in the asm string, more will be added later
-	;example
-	;str := "8B 87 A8 00 00 00"  ;mov eax,[rdi+000000A8]
-	;str .= " 3B 05 " FovHook.REL(minFovAddress,2)  ;cmp eax,[minFov]
-	;str .= " 0F 8C 12 00 00 00"  ;jl 13FFF0024
-	;str .= " 3B 05 " FovHook.REL(maxFovAddress,2)  ;cmp eax,[maxFov]
-	;str .= " 0F 8F 06 00 00 00"  ;jg 13FFF0024
-	;str .= " 8B 05 " FovHook.REL(fovAddress,2) ;mov eax,[fov]
-	;str .= " E9 " FovHook.JUMP(_m.BaseAddress + 0x1012AC5)  ;jmp "Dead Space.exe"+1012AC5
 	REL(address,ops:=1,bits:=0) {
 		return "REL_" ops "_" this.mem.tohex(address,1,bits) "_" bits
 	}
@@ -728,5 +822,4 @@ class HookHelper {
 		return "REL_1_" this.mem.tohex(address,1,bits) "_" bits
 	}
 }
-
 

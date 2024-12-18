@@ -27,7 +27,7 @@ class ShinsMemoryClass {
 		}
 		WinGet, pid, pid, % programIdentifier
 		if (pid = 0) {
-			msgbox % "Could not find pid for the identifier: " programIdentifer
+			msgbox % "Could not find pid for the identifier: " programIdentifier
 			return
 		}
 		this.pid := pid

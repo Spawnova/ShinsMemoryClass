@@ -713,9 +713,9 @@ class HookHelper {
 					this.current+=5,i++
 				} else {
 					if (diff > 0)
-						out .= "EB " tohex(diff-1)
+						out .= "EB " this.mem.ToHex(diff-1)
 					else
-						out .= "EB " tohex(255+(diff-1))
+						out .= "EB " this.mem.ToHex(255+(diff-1))
 					this.current+=2,i++
 				}
 			} else if (v = "JNE") {
@@ -725,9 +725,9 @@ class HookHelper {
 					this.current+=6,i++
 				} else {
 					if (diff > 0)
-						out .= "75 " tohex(diff-1)
+						out .= "75 " this.mem.ToHex(diff-1)
 					else
-						out .= "75 " tohex(255+(diff-1))
+						out .= "75 " this.mem.ToHex(255+(diff-1))
 					this.current+=2,i++
 				}
 			} else if (RegExMatch(v,"REL_([^_]+)_([^_]+)_(\d)",mm)) {
